@@ -1,0 +1,81 @@
+import type { IHttpClient } from '../ports/http.js';
+import type { IPaymentLinksPort } from '../ports/payment-links.js';
+import type {
+  PaymentLink,
+  CreatePaymentLinkRequest,
+  UpdatePaymentLinkRequest,
+} from '../domain/types.js';
+
+export class PaymentLinksResource implements IPaymentLinksPort {
+  constructor(private readonly http: IHttpClient) {}
+
+  async create(req: CreatePaymentLinkRequest): Promise<PaymentLink> {
+    const body: Record<string, unknown> = {
+      amount: req.amount,
+      description: req.description,
+      userBankId: req.userBankId,
+      currency: req.currency ?? 'VES',
+    };
+    if (req.redirectUrl !== undefined) body['redirect_url'] = req.redirectUrl;
+    if (req.webhookUrl !== undefined) body['webhook_url'] = req.webhookUrl;
+    if (req.name !== undefined) body['name'] = req.name;
+    if (req.isUsd !== undefined) body['is_usd'] = req.isUsd;
+    if (req.metadata !== undefined) body['metadata'] = req.metadata;
+
+    const res = await this.http.request<Record<string, unknown>>({
+      method: 'POST',
+      path: '/v1/paymentlink',
+      body,
+    });
+
+    return normalizePaymentLink(res);
+  }
+
+  async update(id: string, req: UpdatePaymentLinkRequest): Promise<PaymentLink> {
+    const body: Record<string, unknown> = {};
+    if (req.amount !== undefined) body['amount'] = req.amount;
+    if (req.description !== undefined) body['description'] = req.description;
+    if (req.redirectUrl !== undefined) body['redirect_url'] = req.redirectUrl;
+    if (req.currency !== undefined) body['currency'] = req.currency;
+
+    const res = await this.http.request<Record<string, unknown>>({
+      method: 'PATCH',
+      path: `/paymentlink/${id}/patch`,
+      body,
+    });
+
+    return normalizePaymentLink(res);
+  }
+
+  async getInfo(id: string): Promise<PaymentLink> {
+    const res = await this.http.request<Record<string, unknown>>({
+      method: 'GET',
+      path: `/paymentlink/${id}/info`,
+    });
+
+    // Shape: { data: { payment_link: {...} } } or { data: {...} } or root
+    const inner =
+      (res['data'] as Record<string, unknown> | undefined)?.['payment_link'] ??
+      res['data'] ??
+      res;
+
+    return normalizePaymentLink(inner as Record<string, unknown>);
+  }
+}
+
+function normalizePaymentLink(raw: Record<string, unknown>): PaymentLink {
+  // Shape: { paymentlink: { id, url } } or { data: { id, url } } or root { id, url }
+  const src =
+    (raw['paymentlink'] as Record<string, unknown> | undefined) ??
+    (raw['data'] as Record<string, unknown> | undefined) ??
+    raw;
+
+  return {
+    id: String(src['id'] ?? ''),
+    url: String(src['url'] ?? ''),
+    amount: typeof src['amount'] === 'number' ? src['amount'] : undefined,
+    status: typeof src['status'] === 'string' ? src['status'] : undefined,
+    userId: typeof src['user_id'] === 'string' ? src['user_id'] :
+            typeof src['userId'] === 'string' ? src['userId'] : undefined,
+  };
+}
