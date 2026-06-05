@@ -29,6 +29,8 @@ export type PabiloErrorCode =
   | 'INTERNAL_SERVER_ERROR'
   | 'NETWORK_ERROR'
   | 'REQUEST_FAILED'
+  | 'USER_BANK_ALREADY_EXISTS'
+  | 'USER_BANCK_NOT_FOUND'
   | (string & Record<never, never>);
 
 export interface BankAccountEntry {
@@ -139,3 +141,34 @@ export interface VerifyPaymentRequest {
 export type VerifyPaymentResult =
   | { found: false; reason: 'BANK_NOT_AVAILABLE' | 'PAYMENT_NOT_FOUND' }
   | { found: true; isNew: boolean; data: PaymentData };
+
+// ── UserBank creation ────────────────────────────────────────────────────────
+
+export interface UserBankMetadataEntry {
+  key_name: string;
+  key_value: string;
+}
+
+interface BaseCreateUserBankRequest {
+  description: string;
+  userBankPhone: string;
+  userBankDni: string;
+  metadata?: UserBankMetadataEntry[];
+}
+
+export interface CreateVeBanRequest extends BaseCreateUserBankRequest {
+  bankProvider: 'VE_BAN';
+  username: string;
+  password: string;
+}
+
+export interface CreateVeBanEmpV2Request extends BaseCreateUserBankRequest {
+  bankProvider: 'VE_BAN_EMP_V2';
+  accountNumber: string;
+  apiKey: string;
+}
+
+// Add new providers to this union
+export type CreateUserBankRequest =
+  | CreateVeBanRequest
+  | CreateVeBanEmpV2Request;

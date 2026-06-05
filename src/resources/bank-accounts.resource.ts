@@ -1,9 +1,28 @@
 import type { IHttpClient } from '../ports/http.js';
 import type { IBankAccountsPort } from '../ports/bank-accounts.js';
-import type { UserBank, BankAccountEntry } from '../domain/types.js';
+import type { UserBank, BankAccountEntry, CreateUserBankRequest } from '../domain/types.js';
 
 export class BankAccountsResource implements IBankAccountsPort {
   constructor(private readonly http: IHttpClient) {}
+
+  async create(req: CreateUserBankRequest): Promise<UserBank> {
+    // API requires user_id in the body — fetch it transparently from /me
+    const meRes = await this.http.request<Record<string, unknown>>({ method: 'GET', path: '/me' });
+    const userId = String(
+      (meRes['user'] as Record<string, unknown> | undefined)?.['id'] ?? meRes['id'] ?? ''
+    );
+
+    const body = buildCreateBody(req, userId);
+    const res = await this.http.request<Record<string, unknown>>({
+      method: 'POST',
+      path: '/usersbank',
+      body,
+    });
+
+    // Response: { message, userbank: {...} } | { user_bank: {...} } | { data: {...} } | root
+    const raw = (res['userbank'] ?? res['user_bank'] ?? res['data'] ?? res) as Record<string, unknown>;
+    return normalizeUserBank(raw);
+  }
 
   async list(): Promise<UserBank[]> {
     const res = await this.http.request<Record<string, unknown>>({
@@ -42,4 +61,28 @@ function normalizeBankAccount(raw: unknown): BankAccountEntry {
     account_number: String(a['account_number'] ?? ''),
     account_type: String(a['account_type'] ?? a['type'] ?? ''),
   };
+}
+
+function buildCreateBody(req: CreateUserBankRequest, userId: string): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    bank_provider: req.bankProvider,
+    description: req.description,
+    user_bank_phone: req.userBankPhone,
+    user_bank_dni: req.userBankDni,
+    user_id: userId,
+    metadata: req.metadata ?? [],
+  };
+
+  switch (req.bankProvider) {
+    case 'VE_BAN':
+      body['username'] = req.username;
+      body['password'] = req.password;
+      break;
+    case 'VE_BAN_EMP_V2':
+      body['username'] = req.accountNumber;
+      body['password'] = req.apiKey;
+      break;
+  }
+
+  return body;
 }

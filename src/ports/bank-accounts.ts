@@ -1,5 +1,6 @@
-import type { UserBank } from '../domain/types.js';
+import type { UserBank, CreateUserBankRequest } from '../domain/types.js';
 
 export interface IBankAccountsPort {
   list(): Promise<UserBank[]>;
+  create(req: CreateUserBankRequest): Promise<UserBank>;
 }
