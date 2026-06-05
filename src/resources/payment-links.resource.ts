@@ -58,22 +58,17 @@ export class PaymentLinksResource implements IPaymentLinksPort {
       method: 'GET',
       path: `/paymentlink/${id}/info`,
     });
-
-    // Shape: { data: { payment_link: {...} } } or { data: {...} } or root
-    const inner =
-      (res['data'] as Record<string, unknown> | undefined)?.['payment_link'] ??
-      res['data'] ??
-      res;
-
-    return normalizePaymentLink(inner as Record<string, unknown>);
+    return normalizePaymentLink(res);
   }
 }
 
 function normalizePaymentLink(raw: Record<string, unknown>): PaymentLink {
-  // Shape: { paymentlink: { id, url } } or { data: { id, url } } or root { id, url }
+  // Shapes: { paymentlink: {...} } | { data: { payment_link: {...} } } | { data: {...} } | root
+  const dataWrap = raw['data'] as Record<string, unknown> | undefined;
   const src =
     (raw['paymentlink'] as Record<string, unknown> | undefined) ??
-    (raw['data'] as Record<string, unknown> | undefined) ??
+    (dataWrap?.['payment_link'] as Record<string, unknown> | undefined) ??
+    dataWrap ??
     raw;
 
   const userId = typeof src['user_id'] === 'string' ? src['user_id'] :
@@ -82,8 +77,19 @@ function normalizePaymentLink(raw: Record<string, unknown>): PaymentLink {
   return {
     id: String(src['id'] ?? ''),
     url: String(src['url'] ?? ''),
-    ...(typeof src['amount'] === 'number' ? { amount: src['amount'] } : {}),
-    ...(typeof src['status'] === 'string' ? { status: src['status'] } : {}),
-    ...(userId !== undefined ? { userId } : {}),
+    ...(typeof src['amount'] === 'number'                 ? { amount: src['amount'] }                             : {}),
+    ...(typeof src['status'] === 'string'                 ? { status: src['status'] }                             : {}),
+    ...(typeof src['type'] === 'string'                   ? { type: src['type'] }                                 : {}),
+    ...(userId !== undefined                              ? { userId }                                             : {}),
+    ...(typeof src['name'] === 'string'                   ? { name: src['name'] }                                 : {}),
+    ...(typeof src['description'] === 'string'            ? { description: src['description'] }                   : {}),
+    ...(typeof src['is_usd'] === 'boolean'                ? { isUsd: src['is_usd'] }                              : {}),
+    ...(typeof src['redirect_url'] === 'string'           ? { redirectUrl: src['redirect_url'] }                  : {}),
+    ...(typeof src['webhook_url'] === 'string'            ? { webhookUrl: src['webhook_url'] }                    : {}),
+    ...(typeof src['notification_by_whastapp'] === 'boolean' ? { notificationByWhatsapp: src['notification_by_whastapp'] } : {}),
+    ...(typeof src['expiration_time'] === 'number'        ? { expirationTime: src['expiration_time'] }            : {}),
+    ...(typeof src['payment_link_origin'] === 'string'    ? { paymentLinkOrigin: src['payment_link_origin'] }    : {}),
+    ...(typeof src['created_at'] === 'string'             ? { createdAt: src['created_at'] }                     : {}),
+    ...(typeof src['updated_at'] === 'string'             ? { updatedAt: src['updated_at'] }                     : {}),
   };
 }

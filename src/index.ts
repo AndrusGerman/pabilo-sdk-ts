@@ -17,6 +17,7 @@ export type {
   BankProvider,
   AccountType,
   PaymentLinkStatus,
+  PaymentLinkType,
   PabiloErrorCode,
 } from './domain/types.js';
 

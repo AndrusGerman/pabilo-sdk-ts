@@ -10,8 +10,14 @@ export type AccountType = 'SAVINGS' | 'CHECKING' | (string & Record<never, never
 export type PaymentLinkStatus =
   | 'pending'
   | 'paid'
+  | 'active'
   | 'expired'
   | 'cancelled'
+  | (string & Record<never, never>);
+
+export type PaymentLinkType =
+  | 'default'
+  | 'fixed'
   | (string & Record<never, never>);
 
 export type PabiloErrorCode =
@@ -55,7 +61,18 @@ export interface PaymentLink {
   url: string;
   amount?: number;
   status?: PaymentLinkStatus;
+  type?: PaymentLinkType;
   userId?: string;
+  name?: string;
+  description?: string;
+  isUsd?: boolean;
+  redirectUrl?: string;
+  webhookUrl?: string;
+  notificationByWhatsapp?: boolean;
+  expirationTime?: number;
+  paymentLinkOrigin?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PaymentParams {
