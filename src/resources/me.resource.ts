@@ -13,8 +13,8 @@ export class MeResource implements IMePort {
     const u = (res['user'] ?? res) as Record<string, unknown>;
     return {
       id: String(u['id'] ?? ''),
-      email: typeof u['email'] === 'string' ? u['email'] : undefined,
-      name: typeof u['name'] === 'string' ? u['name'] : undefined,
+      ...(typeof u['email'] === 'string' ? { email: u['email'] } : {}),
+      ...(typeof u['name'] === 'string' ? { name: u['name'] } : {}),
     };
   }
 
@@ -25,7 +25,7 @@ export class MeResource implements IMePort {
     });
     return {
       name: String(res['name'] ?? ''),
-      planType: typeof res['planType'] === 'string' ? res['planType'] : undefined,
+      ...(typeof res['planType'] === 'string' ? { planType: res['planType'] } : {}),
     };
   }
 }

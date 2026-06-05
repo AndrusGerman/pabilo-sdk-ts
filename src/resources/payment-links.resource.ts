@@ -13,11 +13,12 @@ export class PaymentLinksResource implements IPaymentLinksPort {
     const body: Record<string, unknown> = {
       amount: req.amount,
       description: req.description,
-      userBankId: req.userBankId,
+      user_bank_id: req.userBankId,
       currency: req.currency ?? 'VES',
     };
     if (req.redirectUrl !== undefined) body['redirect_url'] = req.redirectUrl;
     if (req.webhookUrl !== undefined) body['webhook_url'] = req.webhookUrl;
+    if (req.notificationByWhatsapp !== undefined) body['notification_by_whastapp'] = req.notificationByWhatsapp;
     if (req.name !== undefined) body['name'] = req.name;
     if (req.isUsd !== undefined) body['is_usd'] = req.isUsd;
     if (req.metadata !== undefined) body['metadata'] = req.metadata;
@@ -47,6 +48,11 @@ export class PaymentLinksResource implements IPaymentLinksPort {
     return normalizePaymentLink(res);
   }
 
+  async isPaid(id: string): Promise<boolean> {
+    const info = await this.getInfo(id);
+    return info.status === 'paid';
+  }
+
   async getInfo(id: string): Promise<PaymentLink> {
     const res = await this.http.request<Record<string, unknown>>({
       method: 'GET',
@@ -70,12 +76,14 @@ function normalizePaymentLink(raw: Record<string, unknown>): PaymentLink {
     (raw['data'] as Record<string, unknown> | undefined) ??
     raw;
 
+  const userId = typeof src['user_id'] === 'string' ? src['user_id'] :
+                 typeof src['userId'] === 'string' ? src['userId'] : undefined;
+
   return {
     id: String(src['id'] ?? ''),
     url: String(src['url'] ?? ''),
-    amount: typeof src['amount'] === 'number' ? src['amount'] : undefined,
-    status: typeof src['status'] === 'string' ? src['status'] : undefined,
-    userId: typeof src['user_id'] === 'string' ? src['user_id'] :
-            typeof src['userId'] === 'string' ? src['userId'] : undefined,
+    ...(typeof src['amount'] === 'number' ? { amount: src['amount'] } : {}),
+    ...(typeof src['status'] === 'string' ? { status: src['status'] } : {}),
+    ...(userId !== undefined ? { userId } : {}),
   };
 }

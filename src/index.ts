@@ -8,6 +8,8 @@ export type {
   Plan,
   PaymentLink,
   PaymentData,
+  PaymentParams,
+  UserBankPayment,
   CreatePaymentLinkRequest,
   UpdatePaymentLinkRequest,
   VerifyPaymentRequest,

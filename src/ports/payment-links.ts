@@ -8,4 +8,5 @@ export interface IPaymentLinksPort {
   create(req: CreatePaymentLinkRequest): Promise<PaymentLink>;
   update(id: string, req: UpdatePaymentLinkRequest): Promise<PaymentLink>;
   getInfo(id: string): Promise<PaymentLink>;
+  isPaid(id: string): Promise<boolean>;
 }

@@ -31,8 +31,8 @@ function normalizeUserBank(raw: unknown): UserBank {
     description: String(b['description'] ?? ''),
     provider: String(b['provider'] ?? ''),
     bank_accounts: bankAccounts,
-    payment_link: typeof b['payment_link'] === 'boolean' ? b['payment_link'] : undefined,
-    to_trash: typeof b['to_trash'] === 'boolean' ? b['to_trash'] : undefined,
+    ...(typeof b['payment_link'] === 'boolean' ? { payment_link: b['payment_link'] } : {}),
+    ...(typeof b['to_trash'] === 'boolean' ? { to_trash: b['to_trash'] } : {}),
   };
 }
 
