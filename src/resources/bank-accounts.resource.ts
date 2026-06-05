@@ -24,6 +24,10 @@ export class BankAccountsResource implements IBankAccountsPort {
     return normalizeUserBank(raw);
   }
 
+  async delete(id: string): Promise<void> {
+    await this.http.request({ method: 'DELETE', path: `/usersbank/${id}/to-trash` });
+  }
+
   async list(): Promise<UserBank[]> {
     const res = await this.http.request<Record<string, unknown>>({
       method: 'GET',
@@ -64,6 +68,10 @@ function normalizeBankAccount(raw: unknown): BankAccountEntry {
 }
 
 function buildCreateBody(req: CreateUserBankRequest, userId: string): Record<string, unknown> {
+  if (req.bankProvider === 'BANK_TEST') {
+    return { bank_provider: req.bankProvider, user_id: userId };
+  }
+
   const body: Record<string, unknown> = {
     bank_provider: req.bankProvider,
     description: req.description,

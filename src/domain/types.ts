@@ -168,7 +168,12 @@ export interface CreateVeBanEmpV2Request extends BaseCreateUserBankRequest {
   apiKey: string;
 }
 
+export interface CreateBankTestRequest {
+  bankProvider: 'BANK_TEST';
+}
+
 // Add new providers to this union
 export type CreateUserBankRequest =
   | CreateVeBanRequest
-  | CreateVeBanEmpV2Request;
+  | CreateVeBanEmpV2Request
+  | CreateBankTestRequest;
