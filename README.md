@@ -43,9 +43,15 @@ Returns the authenticated user's profile.
 ```typescript
 const user = await pabilo.me.getMe();
 
-console.log(user.id);    // string
-console.log(user.email); // string | undefined
-console.log(user.name);  // string | undefined
+console.log(user.id);          // string
+console.log(user.email);       // string | undefined
+console.log(user.username);    // string | undefined
+console.log(user.fullName);    // string | undefined
+console.log(user.companyName); // string | undefined
+console.log(user.credits);     // number | undefined
+console.log(user.planIsActive);// boolean | undefined
+console.log(user.isDemo);      // boolean | undefined
+console.log(user.userType);    // 'user' | 'admin' | 'commerce' | ... | undefined
 ```
 
 **Returns:** `User`
@@ -54,8 +60,16 @@ console.log(user.name);  // string | undefined
 interface User {
   id: string;
   email?: string;
-  name?: string;
+  username?: string;
+  fullName?: string;
+  companyName?: string;
+  credits?: number;
+  planIsActive?: boolean;
+  isDemo?: boolean;
+  userType?: UserType;
 }
+
+type UserType = 'system' | 'user' | 'admin' | 'test' | 'commerce' | string;
 ```
 
 ---
@@ -67,16 +81,38 @@ Returns the current subscription plan for the authenticated account.
 ```typescript
 const plan = await pabilo.me.getPlan();
 
-console.log(plan.name);     // e.g. 'basic', 'pro'
-console.log(plan.planType); // string | undefined
+console.log(plan.name);              // e.g. 'Pro'
+console.log(plan.planType);          // 'credit' | 'unlimited' | 'counter'
+console.log(plan.period);            // 'month' | 'six_months' | 'year'
+console.log(plan.requestLimit);      // number (-1 = unlimited)
+console.log(plan.bankAccountLimit);  // number (-1 = unlimited)
+console.log(plan.initialCredits);    // number
+console.log(plan.price);             // number
+console.log(plan.benefits);          // PlanBenefit[]
 ```
 
 **Returns:** `Plan`
 
 ```typescript
 interface Plan {
+  id?: string;
   name: string;
-  planType?: string;
+  description?: string;
+  planType?: PlanType;      // 'credit' | 'unlimited' | 'counter'
+  period?: PlanPeriod;      // 'month' | 'six_months' | 'year'
+  price?: number;
+  requestLimit?: number;
+  bankAccountLimit?: number;
+  initialCredits?: number;
+  maxAcumulatedCredits?: number;
+  benefits?: PlanBenefit[];
+  salient?: boolean;
+  hidden?: boolean;
+}
+
+interface PlanBenefit {
+  description: string;
+  contain: boolean;
 }
 ```
 
@@ -106,7 +142,7 @@ for (const bank of banks) {
 interface UserBank {
   id: string;
   description: string;
-  provider: string;
+  provider: BankProvider;
   bank_accounts: BankAccountEntry[];
   payment_link?: boolean;
   to_trash?: boolean;
@@ -116,6 +152,17 @@ interface BankAccountEntry {
   account_number: string;
   account_type: string; // e.g. 'AHORRO', 'CORRIENTE'
 }
+
+type BankProvider =
+  | 'VE_BAN'           // BDV personal
+  | 'VE_BAN_EMP'       // BDV empresa v1
+  | 'VE_BAN_EMP_V2'    // BDV empresa v2
+  | 'VE_PROV'          // Provincial personal
+  | 'VE_PROV_EMP'      // Provincial empresa
+  | 'MERCANTIL_EMP_V1'      // Mercantil empresa
+  | 'MERCANTIL_EMP_TEST_V1' // Mercantil test
+  | 'BANK_TEST'        // Sandbox
+  | string;
 ```
 
 ---
@@ -135,13 +182,9 @@ const bank = await pabilo.bankAccounts.create({
   username: 'usuario_portal_bdv',
   password: 'contraseña_portal_bdv',
 });
-
-console.log(bank.id); // use this id when creating payment links
 ```
 
 **BDV empresa — `VE_BAN_EMP_V2`**
-
-The `accountNumber` and `apiKey` fields are mapped to `username` and `password` in the API — the SDK exposes semantic names.
 
 ```typescript
 const bank = await pabilo.bankAccounts.create({
@@ -149,7 +192,7 @@ const bank = await pabilo.bankAccounts.create({
   description: 'Cuenta empresa BDV',
   userBankPhone: '04241234567',
   userBankDni: '12345678',
-  accountNumber: '01020000000000000000', // número de cuenta
+  accountNumber: '01020000000000000000',
   apiKey: 'bdv_api_key_here',
   metadata: [
     { key_name: 'SHOW_DATE_IN_GENERIC_MOVEMENTS', key_value: 'true' },
@@ -165,58 +208,61 @@ A sandboxed bank for testing. Always has a payment with reference `67890` availa
 const bank = await pabilo.bankAccounts.create({ bankProvider: 'BANK_TEST' });
 ```
 
-**Request types:**
-
-```typescript
-// Shared base (not needed for BANK_TEST)
-interface BaseCreateUserBankRequest {
-  description: string;
-  userBankPhone: string;
-  userBankDni: string;
-  metadata?: UserBankMetadataEntry[];  // [{ key_name: string, key_value: string }]
-}
-
-interface CreateVeBanRequest extends BaseCreateUserBankRequest {
-  bankProvider: 'VE_BAN';
-  username: string;
-  password: string;
-}
-
-interface CreateVeBanEmpV2Request extends BaseCreateUserBankRequest {
-  bankProvider: 'VE_BAN_EMP_V2';
-  accountNumber: string;
-  apiKey: string;
-}
-
-interface CreateBankTestRequest {
-  bankProvider: 'BANK_TEST';
-}
-
-type CreateUserBankRequest =
-  | CreateVeBanRequest
-  | CreateVeBanEmpV2Request
-  | CreateBankTestRequest;
-```
-
-**Returns:** `UserBank` (same shape as `list()` entries)
-
 ---
 
 ### `bankAccounts.delete(id): Promise<void>`
 
-Soft-deletes a bank account (moves it to trash). The bank no longer appears in `list()` results.
+Soft-deletes a bank account. The bank no longer appears in `list()` results.
 
 ```typescript
 await pabilo.bankAccounts.delete(bank.id);
 ```
 
-| Parameter | Type | Description |
-|---|---|---|
-| `id` | `string` | The `UserBank.id` to delete |
-
 ---
 
 ## `pabilo.paymentLinks`
+
+### `paymentLinks.list(req?): Promise<PaymentLinksPage>`
+
+Returns a paginated list of the authenticated user's payment links.
+
+```typescript
+const page = await pabilo.paymentLinks.list({
+  limit: 10,
+  page: 1,
+  status: 'pending',   // filter by status
+  type: 'default',     // filter by type
+  search: 'orden',     // search by name/description
+});
+
+console.log(page.total);   // total count
+console.log(page.page);    // current page
+console.log(page.limit);   // page size
+console.log(page.items);   // PaymentLink[]
+```
+
+**Request fields (all optional):**
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `page` | `number` | `1` | Page number |
+| `limit` | `number` | `10` | Items per page |
+| `status` | `PaymentLinkStatus` | — | Filter by status |
+| `type` | `PaymentLinkType` | — | Filter by type |
+| `search` | `string` | — | Text search |
+
+**Returns:** `PaymentLinksPage`
+
+```typescript
+interface PaymentLinksPage {
+  items: PaymentLink[];
+  total: number;
+  page: number;
+  limit: number;
+}
+```
+
+---
 
 ### `paymentLinks.create(req): Promise<PaymentLink>`
 
@@ -236,9 +282,9 @@ const link = await pabilo.paymentLinks.create({
   currency: 'VES',
 });
 
-console.log(link.url);    // https://pabilo.app/pay/...  share this with the customer
-console.log(link.id);     // use for getInfo / isPaid / update
-console.log(link.status); // 'pending' | 'active' | 'paid' | 'expired' | 'cancelled'
+console.log(link.url);    // https://pabilo.app/pay/...
+console.log(link.id);
+console.log(link.status); // 'pending' | 'active' | 'paid' | 'failed' | 'canceled' | 'expired' | 'stopped'
 ```
 
 **Request fields:**
@@ -263,85 +309,71 @@ interface PaymentLink {
   id: string;
   url: string;
   amount?: number;
-  status?: 'pending' | 'paid' | 'active' | 'expired' | 'cancelled';
-  type?: 'default' | 'fixed';
+  status?: PaymentLinkStatus;
+  statusDetail?: string;
+  type?: PaymentLinkType;
   userId?: string;
+  userBankId?: string;
+  withSubscriptionId?: string;
   name?: string;
   description?: string;
   isUsd?: boolean;
   redirectUrl?: string;
   webhookUrl?: string;
+  webhookMethod?: string;
   notificationByWhatsapp?: boolean;
   expirationTime?: number;
-  paymentLinkOrigin?: string;
+  paymentLinkOrigin?: PaymentLinkOrigin;
   createdAt?: string;
   updatedAt?: string;
 }
+
+type PaymentLinkStatus = 'pending' | 'active' | 'paid' | 'failed' | 'canceled' | 'expired' | 'stopped' | string;
+type PaymentLinkType   = 'default' | 'fixed' | 'subscription' | 'donation' | string;
+type PaymentLinkOrigin = 'pabilo' | 'api' | string;
 ```
 
 ---
 
 ### `paymentLinks.getInfo(id): Promise<PaymentLink>`
 
-Fetches current state of a payment link (status, amount, etc.).
+Fetches current state of a payment link.
 
 ```typescript
 const link = await pabilo.paymentLinks.getInfo('69d0083b691af50b78e07921');
 
-console.log(link.status);    // 'paid'
-console.log(link.amount);    // 4000
-console.log(link.createdAt); // ISO date string
+console.log(link.status);       // 'paid'
+console.log(link.statusDetail); // string — reason for current status
+console.log(link.amount);
+console.log(link.createdAt);
 ```
-
-| Parameter | Type | Description |
-|---|---|---|
-| `id` | `string` | The `PaymentLink.id` |
 
 ---
 
 ### `paymentLinks.isPaid(id): Promise<boolean>`
 
-Convenience method — returns `true` if the payment link's status is `'paid'`.
+Returns `true` if the payment link's status is `'paid'`.
 
 ```typescript
-const paid = await pabilo.paymentLinks.isPaid('69d0083b691af50b78e07921');
+const paid = await pabilo.paymentLinks.isPaid(link.id);
 
 if (paid) {
   // fulfill the order
 }
 ```
 
-| Parameter | Type | Description |
-|---|---|---|
-| `id` | `string` | The `PaymentLink.id` |
-
-> Internally calls `getInfo()` and checks `status === 'paid'`.
-
 ---
 
 ### `paymentLinks.update(id, req): Promise<PaymentLink>`
 
-Updates a payment link's amount, description, redirect URL, or currency.
+Updates a payment link's amount or description.
 
 ```typescript
-const updated = await pabilo.paymentLinks.update('69d0083b691af50b78e07921', {
+const updated = await pabilo.paymentLinks.update(link.id, {
   amount: 5000,
   description: 'Orden actualizada',
-  redirectUrl: 'https://myapp.com/nueva-ruta',
-  currency: 'VES',
 });
-
-console.log(updated.amount); // 5000
 ```
-
-**Request fields (all optional):**
-
-| Field | Type | Description |
-|---|---|---|
-| `amount` | `number` | New amount |
-| `description` | `string` | New description |
-| `redirectUrl` | `string` | New redirect URL |
-| `currency` | `string` | New currency code |
 
 ---
 
@@ -349,25 +381,24 @@ console.log(updated.amount); // 5000
 
 ### `payments.verify(userBankId, req): Promise<VerifyPaymentResult>`
 
-Checks whether a specific bank transfer exists in a connected bank account. Used to confirm that a customer's Pago Móvil transfer matches an expected payment.
+Checks whether a specific bank transfer exists in a connected bank account.
 
 ```typescript
 const result = await pabilo.payments.verify(bank.id, {
   amount: 4000,
   bankReference: '12345678',
-  movementType: 'GENERIC', // optional, defaults to 'GENERIC'
+  movementType: 'GENERIC', // 'GENERIC' | 'MOVIL_PAY' | 'TRANSFER' | 'C2P'
 });
 
 if (result.found) {
-  console.log(result.isNew); // true if first time this reference was seen
+  console.log(result.isNew);
   console.log(result.data.credit_cost);
-  console.log(result.data.is_new);
 
   const payment = result.data.user_bank_payment;
   if (payment) {
     console.log(payment.id);
     console.log(payment.amount);
-    console.log(payment.status);           // 'paid'
+    console.log(payment.status); // 'pending' | 'paid' | 'failed'
     console.log(payment.bank_reference_id);
     console.log(payment.payment_params.fecha_pago);
     console.log(payment.payment_params.banco_origen);
@@ -378,20 +409,17 @@ if (result.found) {
   if (result.reason === 'BANK_NOT_AVAILABLE') {
     // bank is offline or credentials expired
   }
-  if (result.reason === 'PAYMENT_NOT_FOUND') {
-    // transfer does not exist or does not match
-  }
 }
 ```
 
-**Request fields:**
+**`movementType` values:**
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `userBankId` (first arg) | `string` | yes | ID of the bank account to search |
-| `amount` | `number` | yes | Expected transfer amount |
-| `bankReference` | `string` | yes | Bank transfer reference number |
-| `movementType` | `string` | no | Defaults to `'GENERIC'` |
+| Value | Description |
+|---|---|
+| `'GENERIC'` | Default — any movement type (default) |
+| `'MOVIL_PAY'` | Pago Móvil |
+| `'TRANSFER'` | Bank transfer |
+| `'C2P'` | Cuenta a Persona (C2P) |
 
 **Returns:** `VerifyPaymentResult` — a discriminated union on `found`:
 
@@ -399,46 +427,59 @@ if (result.found) {
 type VerifyPaymentResult =
   | { found: false; reason: 'BANK_NOT_AVAILABLE' | 'PAYMENT_NOT_FOUND' }
   | { found: true; isNew: boolean; data: PaymentData };
-
-interface PaymentData {
-  is_new: boolean;
-  credit_cost: number;
-  user_bank_payment?: UserBankPayment;
-  user_credits_total?: number;
-  user_credits_total_in_usd?: number;
-}
-
-interface UserBankPayment {
-  id: string;
-  amount: number;
-  status: string;
-  user_id: string;
-  user_bank_id: string;
-  bank_reference_id: string;
-  confirmed_status: boolean;
-  credit_cost: number;
-  created_at: string;
-  updated_at: string;
-  payment_params: {
-    amount: number;
-    cedula_pagador: string | null;
-    telefono_pagador: string;
-    fecha_pago: string;
-    banco_origen: string;
-    cuenta_pagador: string;
-    invoice_number: string;
-    movement_type: string;
-  };
-}
 ```
 
 > The API returns HTTP 200 for `BANK_NOT_AVAILABLE` and `PAYMENT_NOT_FOUND`. The SDK handles this transparently — these cases are never thrown as errors.
 
 ---
 
+## Webhooks
+
+When a payment link is paid, the API sends a `POST` to the `webhookUrl` with the following payload. Import `PaymentLinkWebhookPayload` to type your webhook handler:
+
+```typescript
+import type { PaymentLinkWebhookPayload } from '@pabilo/sdk';
+
+// Next.js App Router
+export async function POST(req: Request) {
+  const payload: PaymentLinkWebhookPayload = await req.json();
+
+  console.log(payload.payment_link_id);
+  console.log(payload.status);           // 'paid'
+  console.log(payload.credit_balance);
+
+  const payment = payload.user_bank_payment;
+  if (payment) {
+    console.log(payment.amount);
+    console.log(payment.bank_reference_id);
+    console.log(payment.payment_params.fecha_pago);
+  }
+
+  return Response.json({ ok: true });
+}
+```
+
+**`PaymentLinkWebhookPayload` shape:**
+
+```typescript
+interface PaymentLinkWebhookPayload {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  payment_link_id: string;
+  status: PaymentLinkStatus;
+  payment_link?: PaymentLink;
+  user_bank_payment?: UserBankPayment;
+  credit_balance: number;
+  metadata: Array<{ key: string; value: string }>;
+}
+```
+
+---
+
 ## Error handling
 
-All methods throw `PabiloError` on API errors (non-2xx HTTP responses) or network failures.
+All methods throw `PabiloError` on API errors or network failures.
 
 ```typescript
 import { PabiloClient, PabiloError } from '@pabilo/sdk';
@@ -447,10 +488,10 @@ try {
   const link = await pabilo.paymentLinks.create({ ... });
 } catch (err) {
   if (err instanceof PabiloError) {
-    console.error(err.code);    // PabiloErrorCode string
-    console.error(err.message); // human-readable message from the API
-    console.error(err.raw);     // raw API response body
-    console.error(err.status);  // HTTP status code (if available)
+    console.error(err.code);       // PabiloErrorCode string
+    console.error(err.message);    // human-readable message from the API
+    console.error(err.statusCode); // HTTP status code
+    console.error(err.raw);        // raw API response body
   }
 }
 ```
@@ -461,30 +502,42 @@ try {
 |---|---|
 | `BAD_REQUEST` | Invalid request body or parameters |
 | `UNAUTHORIZED` | API key is missing or invalid |
+| `FORBIDDEN` | Action not permitted |
 | `NOT_FOUND` | Resource not found |
 | `USER_BANK_ALREADY_EXISTS` | Bank account is already connected |
-| `INTERNAL_SERVER_ERROR` | API server error |
+| `USER_BANCK_BAD_PASSWORD` | Wrong bank portal credentials |
+| `USER_BANCK_PASSWORD_EXPIRED` | Bank portal password expired |
+| `NOT_ENOUGH_CREDITS` | Insufficient credits in the account |
+| `PLAN_IS_NOT_ACTIVE` | Account plan is inactive |
+| `REQUEST_LIMIT_REACHED` | Plan request limit exceeded |
+| `BANK_ACCOUNT_LIMIT_REACHED` | Plan bank account limit exceeded |
+| `BANK_NOT_AVAILABLE` | Bank is temporarily offline |
+| `BANK_TEMPORARILY_INACTIVE` | Bank is temporarily disabled |
+| `BANK_TOO_MANY_REQUESTS` | Rate limit from the bank |
+| `PAYMENT_NOT_FOUND` | Transfer reference not found |
+| `PAYMENT_ALREADY_EXISTS` | Transfer already verified |
+| `INTERNAL_ERROR` | API server error |
 | `NETWORK_ERROR` | Request could not reach the API |
-| `REQUEST_FAILED` | HTTP error with no specific code |
 
 ---
 
 ## Testing with BANK_TEST
 
-Use `BANK_TEST` to test the full payment flow without connecting a real bank. It has a pre-configured payment with reference `67890`.
+Use `BANK_TEST` to test the full payment flow without connecting a real bank. Reference `67890` always returns a found payment.
 
 ```typescript
 // 1. Create test bank
 const bank = await pabilo.bankAccounts.create({ bankProvider: 'BANK_TEST' });
 
-// 2. Create a payment link using the test bank
+// 2. Create a payment link
 const link = await pabilo.paymentLinks.create({
   amount: 100,
   description: 'Test payment',
   userBankId: bank.id,
+  webhookUrl: 'https://myapp.com/webhook',
 });
 
-// 3. Verify the test payment reference
+// 3. Verify the test payment
 const result = await pabilo.payments.verify(bank.id, {
   amount: 0,
   bankReference: '67890',
@@ -536,15 +589,18 @@ export async function POST(req: Request) {
 ```
 
 ```typescript
-// app/api/webhook/pabilo/route.ts — poll-based alternative to webhooks
+// app/api/webhook/pabilo/route.ts
+import type { PaymentLinkWebhookPayload } from '@pabilo/sdk';
 import { pabilo } from '@/lib/pabilo';
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const linkId = searchParams.get('linkId')!;
+export async function POST(req: Request) {
+  const payload: PaymentLinkWebhookPayload = await req.json();
 
-  const paid = await pabilo.paymentLinks.isPaid(linkId);
-  return Response.json({ paid });
+  if (payload.status === 'paid') {
+    // fulfill the order linked to payload.payment_link_id
+  }
+
+  return Response.json({ ok: true });
 }
 ```
 
@@ -552,10 +608,8 @@ export async function GET(req: Request) {
 
 ## Advanced: custom HTTP client
 
-The SDK accepts an `IHttpClient` implementation for logging, retries, or proxying requests.
-
 ```typescript
-import { PabiloClient, FetchHttpClient, type IHttpClient, type RequestOptions } from '@pabilo/sdk';
+import { PabiloClient, FetchHttpClient, type RequestOptions } from '@pabilo/sdk';
 
 class LoggingHttpClient extends FetchHttpClient {
   async request<T>(opts: RequestOptions): Promise<T> {
@@ -566,11 +620,11 @@ class LoggingHttpClient extends FetchHttpClient {
 
 const pabilo = new PabiloClient({
   apiKey: 'YOUR_API_KEY',
-  httpClient: new LoggingHttpClient({ baseUrl: 'https://api.pabilo.app', apiKey: 'YOUR_API_KEY' }),
+  httpClient: new LoggingHttpClient(),
 });
 ```
 
-Custom base URL (e.g. staging):
+Custom base URL:
 
 ```typescript
 const pabilo = new PabiloClient({
@@ -591,9 +645,11 @@ import type {
   // Resources
   User,
   Plan,
+  PlanBenefit,
   UserBank,
   BankAccountEntry,
   PaymentLink,
+  PaymentLinksPage,
   PaymentData,
   UserBankPayment,
   PaymentParams,
@@ -606,15 +662,23 @@ import type {
   UserBankMetadataEntry,
   CreatePaymentLinkRequest,
   UpdatePaymentLinkRequest,
+  ListPaymentLinksRequest,
   VerifyPaymentRequest,
 
-  // Results
+  // Results & Webhooks
   VerifyPaymentResult,
+  PaymentLinkWebhookPayload,
 
-  // Enums / literals
-  PaymentLinkStatus,    // 'pending' | 'paid' | 'active' | 'expired' | 'cancelled'
-  PaymentLinkType,      // 'default' | 'fixed'
-  BankProvider,
+  // Literals / enums
+  PaymentLinkStatus,    // 'pending' | 'active' | 'paid' | 'failed' | 'canceled' | 'expired' | 'stopped'
+  PaymentLinkType,      // 'default' | 'fixed' | 'subscription' | 'donation'
+  PaymentLinkOrigin,    // 'pabilo' | 'api'
+  BankProvider,         // 'VE_BAN' | 'VE_BAN_EMP_V2' | ...
+  MovementType,         // 'GENERIC' | 'MOVIL_PAY' | 'TRANSFER' | 'C2P'
+  UserBankPaymentStatus,// 'pending' | 'paid' | 'failed'
+  UserType,             // 'user' | 'admin' | 'commerce' | ...
+  PlanType,             // 'credit' | 'unlimited' | 'counter'
+  PlanPeriod,           // 'month' | 'six_months' | 'year'
   AccountType,
   PabiloErrorCode,
 

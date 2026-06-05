@@ -1,23 +1,66 @@
 export type BankProvider =
-  | 'BANESCO'
-  | 'MERCANTIL'
-  | 'BDV'
-  | 'PROVINCIAL'
+  | 'VE_BAN'
+  | 'VE_BAN_EMP'
+  | 'VE_BAN_EMP_V2'
+  | 'VE_PROV'
+  | 'VE_PROV_EMP'
+  | 'BANK_TEST'
+  | 'MERCANTIL_EMP_TEST_V1'
+  | 'MERCANTIL_EMP_V1'
   | (string & Record<never, never>);
 
 export type AccountType = 'SAVINGS' | 'CHECKING' | (string & Record<never, never>);
 
 export type PaymentLinkStatus =
   | 'pending'
-  | 'paid'
   | 'active'
+  | 'paid'
+  | 'failed'
+  | 'canceled'
   | 'expired'
-  | 'cancelled'
+  | 'stopped'
   | (string & Record<never, never>);
 
 export type PaymentLinkType =
   | 'default'
   | 'fixed'
+  | 'subscription'
+  | 'donation'
+  | (string & Record<never, never>);
+
+export type PaymentLinkOrigin = 'pabilo' | 'api' | (string & Record<never, never>);
+
+export type MovementType =
+  | 'GENERIC'
+  | 'MOVIL_PAY'
+  | 'TRANSFER'
+  | 'C2P'
+  | (string & Record<never, never>);
+
+export type UserBankPaymentStatus =
+  | 'pending'
+  | 'paid'
+  | 'failed'
+  | (string & Record<never, never>);
+
+export type UserType =
+  | 'system'
+  | 'user'
+  | 'admin'
+  | 'test'
+  | 'commerce'
+  | (string & Record<never, never>);
+
+export type PlanType =
+  | 'credit'
+  | 'unlimited'
+  | 'counter'
+  | (string & Record<never, never>);
+
+export type PlanPeriod =
+  | 'month'
+  | 'six_months'
+  | 'year'
   | (string & Record<never, never>);
 
 export type PabiloErrorCode =
@@ -25,12 +68,44 @@ export type PabiloErrorCode =
   | 'PAYMENT_NOT_FOUND'
   | 'BAD_REQUEST'
   | 'UNAUTHORIZED'
+  | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'INTERNAL_SERVER_ERROR'
+  | 'INTERNAL_ERROR'
   | 'NETWORK_ERROR'
   | 'REQUEST_FAILED'
+  | 'MISSING_CONFIG'
+  | 'REQUEST_LIMIT_REACHED'
+  | 'BANK_ACCOUNT_LIMIT_REACHED'
   | 'USER_BANK_ALREADY_EXISTS'
   | 'USER_BANCK_NOT_FOUND'
+  | 'USER_BANCK_BAD_PASSWORD'
+  | 'USER_BANCK_PASSWORD_EXPIRED'
+  | 'INVALID_MOVEMENT_TYPE'
+  | 'INVALID_PHONE'
+  | 'MOVEMENT_TYPE_REQUIRED'
+  | 'INVALID_BANK_PROVIDER'
+  | 'PLAN_IS_NOT_ACTIVE'
+  | 'USER_IS_NOT_ACTIVE'
+  | 'NOT_ENOUGH_CREDITS'
+  | 'THIS_EMAIL_ALREADY_EXISTS'
+  | 'THIS_USERNAME_ALREADY_EXISTS'
+  | 'PLAN_IS_ALREADY_ACTIVE'
+  | 'RENOVATION_IS_ALREADY_PAID'
+  | 'GET_DOLAR_PRICE_FAILED'
+  | 'PAYMENT_AMOUNT_NOT_VALID'
+  | 'PAYMENT_ALREADY_EXISTS'
+  | 'IS_NOT_POSITIVE_PAYMENT'
+  | 'IS_NOT_POSITIVE_AMOUNT'
+  | 'PAGE_NOT_FOUND'
+  | 'SESSION_ALREADY_ACTIVE'
+  | 'PROXY_ERROR'
+  | 'NOT_IMPLEMENTED'
+  | 'METHOD_NOT_SUPPORT'
+  | 'COORDINATE_KEY_EXTRACTION_FAILED'
+  | 'COORDINATE_KEY_NOT_VALID'
+  | 'BANK_TEMPORARILY_INACTIVE'
+  | 'BANK_TOO_MANY_REQUESTS'
   | (string & Record<never, never>);
 
 export interface BankAccountEntry {
@@ -50,12 +125,34 @@ export interface UserBank {
 export interface User {
   id: string;
   email?: string;
-  name?: string;
+  username?: string;
+  fullName?: string;
+  companyName?: string;
+  credits?: number;
+  planIsActive?: boolean;
+  isDemo?: boolean;
+  userType?: UserType;
+}
+
+export interface PlanBenefit {
+  description: string;
+  contain: boolean;
 }
 
 export interface Plan {
+  id?: string;
   name: string;
-  planType?: string;
+  description?: string;
+  planType?: PlanType;
+  period?: PlanPeriod;
+  price?: number;
+  requestLimit?: number;
+  bankAccountLimit?: number;
+  initialCredits?: number;
+  maxAcumulatedCredits?: number;
+  benefits?: PlanBenefit[];
+  salient?: boolean;
+  hidden?: boolean;
 }
 
 export interface PaymentLink {
@@ -63,16 +160,20 @@ export interface PaymentLink {
   url: string;
   amount?: number;
   status?: PaymentLinkStatus;
+  statusDetail?: string;
   type?: PaymentLinkType;
   userId?: string;
+  userBankId?: string;
+  withSubscriptionId?: string;
   name?: string;
   description?: string;
   isUsd?: boolean;
   redirectUrl?: string;
   webhookUrl?: string;
+  webhookMethod?: string;
   notificationByWhatsapp?: boolean;
   expirationTime?: number;
-  paymentLinkOrigin?: string;
+  paymentLinkOrigin?: PaymentLinkOrigin;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -96,11 +197,11 @@ export interface UserBankPayment {
   user_id: string;
   amount: number;
   user_bank_id: string;
-  status: string;
+  status: UserBankPaymentStatus;
   credit_cost: number;
   payment_params: PaymentParams;
   confirmed_status: boolean;
-  details: unknown;
+  details?: unknown[];
 }
 
 export interface PaymentData {
@@ -110,6 +211,33 @@ export interface PaymentData {
   user_credits_total?: number;
   user_credits_total_in_usd?: number;
   [key: string]: unknown;
+}
+
+export interface PaymentLinkWebhookPayload {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  payment_link_id: string;
+  status: PaymentLinkStatus;
+  payment_link?: PaymentLink;
+  user_bank_payment?: UserBankPayment;
+  credit_balance: number;
+  metadata: Array<{ key: string; value: string }>;
+}
+
+export interface ListPaymentLinksRequest {
+  page?: number;
+  limit?: number;
+  type?: PaymentLinkType;
+  status?: PaymentLinkStatus;
+  search?: string;
+}
+
+export interface PaymentLinksPage {
+  items: PaymentLink[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface CreatePaymentLinkRequest {
@@ -135,7 +263,7 @@ export interface UpdatePaymentLinkRequest {
 export interface VerifyPaymentRequest {
   amount: number;
   bankReference: string;
-  movementType?: string;
+  movementType?: MovementType;
 }
 
 export type VerifyPaymentResult =
