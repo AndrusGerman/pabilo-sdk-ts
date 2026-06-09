@@ -90,6 +90,15 @@ function buildCreateBody(req: CreateUserBankRequest, userId: string): Record<str
       body['username'] = req.accountNumber;
       body['password'] = req.apiKey;
       break;
+    case 'VE_BANK_PLAZA_V1':
+    case 'VE_BANK_PLAZA_QA_V1':
+      body['username'] = req.clientId;
+      body['password'] = req.clientSecret;
+      body['metadata'] = [
+        ...(req.metadata ?? []),
+        { key_name: 'ACCOUNT_NUMBER', key_value: req.accountNumber },
+      ];
+      break;
   }
 
   return body;

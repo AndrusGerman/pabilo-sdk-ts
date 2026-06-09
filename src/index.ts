@@ -15,6 +15,8 @@ export type {
   CreateVeBanRequest,
   CreateVeBanEmpV2Request,
   CreateBankTestRequest,
+  CreateBankPlazaV1Request,
+  CreateBankPlazaQaV1Request,
   UserBankMetadataEntry,
   CreatePaymentLinkRequest,
   UpdatePaymentLinkRequest,

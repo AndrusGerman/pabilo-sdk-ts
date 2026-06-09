@@ -7,6 +7,8 @@ export type BankProvider =
   | 'BANK_TEST'
   | 'MERCANTIL_EMP_TEST_V1'
   | 'MERCANTIL_EMP_V1'
+  | 'VE_BANK_PLAZA_V1'
+  | 'VE_BANK_PLAZA_QA_V1'
   | (string & Record<never, never>);
 
 export type AccountType = 'SAVINGS' | 'CHECKING' | (string & Record<never, never>);
@@ -300,8 +302,24 @@ export interface CreateBankTestRequest {
   bankProvider: 'BANK_TEST';
 }
 
+interface BaseBankPlazaRequest extends BaseCreateUserBankRequest {
+  clientId: string;      // Client ID     → API: username
+  clientSecret: string;  // Client Secret → API: password
+  accountNumber: string; // Número de Cuenta → API: metadata ACCOUNT_NUMBER
+}
+
+export interface CreateBankPlazaV1Request extends BaseBankPlazaRequest {
+  bankProvider: 'VE_BANK_PLAZA_V1';
+}
+
+export interface CreateBankPlazaQaV1Request extends BaseBankPlazaRequest {
+  bankProvider: 'VE_BANK_PLAZA_QA_V1';
+}
+
 // Add new providers to this union
 export type CreateUserBankRequest =
   | CreateVeBanRequest
   | CreateVeBanEmpV2Request
-  | CreateBankTestRequest;
+  | CreateBankTestRequest
+  | CreateBankPlazaV1Request
+  | CreateBankPlazaQaV1Request;
