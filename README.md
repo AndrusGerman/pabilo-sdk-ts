@@ -154,14 +154,16 @@ interface BankAccountEntry {
 }
 
 type BankProvider =
-  | 'VE_BAN'           // BDV personal
-  | 'VE_BAN_EMP'       // BDV empresa v1
-  | 'VE_BAN_EMP_V2'    // BDV empresa v2
-  | 'VE_PROV'          // Provincial personal
-  | 'VE_PROV_EMP'      // Provincial empresa
+  | 'VE_BAN'                // BDV personal
+  | 'VE_BAN_EMP'            // BDV empresa v1
+  | 'VE_BAN_EMP_V2'         // BDV empresa v2
+  | 'VE_PROV'               // Provincial personal
+  | 'VE_PROV_EMP'           // Provincial empresa
   | 'MERCANTIL_EMP_V1'      // Mercantil empresa
   | 'MERCANTIL_EMP_TEST_V1' // Mercantil test
-  | 'BANK_TEST'        // Sandbox
+  | 'VE_BANK_PLAZA_V1'      // Banco Plaza producción
+  | 'VE_BANK_PLAZA_QA_V1'   // Banco Plaza QA
+  | 'BANK_TEST'             // Sandbox
   | string;
 ```
 
@@ -197,6 +199,36 @@ const bank = await pabilo.bankAccounts.create({
   metadata: [
     { key_name: 'SHOW_DATE_IN_GENERIC_MOVEMENTS', key_value: 'true' },
   ],
+});
+```
+
+**Banco Plaza producción — `VE_BANK_PLAZA_V1`**
+
+```typescript
+const bank = await pabilo.bankAccounts.create({
+  bankProvider: 'VE_BANK_PLAZA_V1',
+  description: 'Banco Plaza empresa',
+  userBankPhone: '04241234567',
+  userBankDni: '12345678',
+  clientId: 'tu-client-id',         // Client ID
+  clientSecret: 'tu-client-secret', // Client Secret
+  accountNumber: '01380000000000000000', // Número de Cuenta
+});
+```
+
+**Banco Plaza QA — `VE_BANK_PLAZA_QA_V1`**
+
+Mismos campos que `VE_BANK_PLAZA_V1`, apunta al entorno QA del banco.
+
+```typescript
+const bank = await pabilo.bankAccounts.create({
+  bankProvider: 'VE_BANK_PLAZA_QA_V1',
+  description: 'Banco Plaza QA',
+  userBankPhone: '04241234567',
+  userBankDni: '12345678',
+  clientId: 'qa-client-id',
+  clientSecret: 'qa-client-secret',
+  accountNumber: '01380000000000000000',
 });
 ```
 
@@ -659,6 +691,8 @@ import type {
   CreateVeBanRequest,
   CreateVeBanEmpV2Request,
   CreateBankTestRequest,
+  CreateBankPlazaV1Request,
+  CreateBankPlazaQaV1Request,
   UserBankMetadataEntry,
   CreatePaymentLinkRequest,
   UpdatePaymentLinkRequest,
