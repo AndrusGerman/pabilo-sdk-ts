@@ -332,6 +332,7 @@ console.log(link.status); // 'pending' | 'active' | 'paid' | 'failed' | 'cancele
 | `redirectUrl` | `string` | no | URL to redirect after payment |
 | `webhookUrl` | `string` | no | URL to receive payment event webhooks |
 | `notificationByWhatsapp` | `boolean` | no | Send WhatsApp notification on payment |
+| `expirationTime` | `number` | no | Expiration in minutes. Default: `1440` (24 h). `-1` = never expires |
 | `metadata` | `Record<string, unknown>` | no | Arbitrary key/value data |
 
 **Returns:** `PaymentLink`

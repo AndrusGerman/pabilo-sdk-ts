@@ -252,6 +252,8 @@ export interface CreatePaymentLinkRequest {
   notificationByWhatsapp?: boolean;
   name?: string;
   isUsd?: boolean;
+  /** Expiration time in minutes. Defaults to 1440 (24 h). Pass -1 for no expiration. */
+  expirationTime?: number;
   metadata?: Record<string, unknown>;
 }
 

@@ -49,6 +49,7 @@ export class PaymentLinksResource implements IPaymentLinksPort {
     if (req.notificationByWhatsapp !== undefined) body['notification_by_whastapp'] = req.notificationByWhatsapp;
     if (req.name !== undefined) body['name'] = req.name;
     if (req.isUsd !== undefined) body['is_usd'] = req.isUsd;
+    if (req.expirationTime !== undefined) body['expiration_time'] = req.expirationTime;
     if (req.metadata !== undefined) body['metadata'] = req.metadata;
 
     const res = await this.http.request<Record<string, unknown>>({

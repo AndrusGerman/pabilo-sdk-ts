@@ -1,6 +1,6 @@
 {
   "name": "@pabilo/sdk",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Official TypeScript SDK for the Pabilo payment platform",
   "license": "MIT",
   "keywords": ["pabilo", "payments", "venezuela", "pago-movil", "sdk"],
