@@ -9,6 +9,8 @@ export type BankProvider =
   | 'MERCANTIL_EMP_V1'
   | 'VE_BANK_PLAZA_V1'
   | 'VE_BANK_PLAZA_QA_V1'
+  | 'BINANCE_APP'
+  | 'NOTIFICATION_ACCOUNT'
   | (string & Record<never, never>);
 
 export type AccountType = 'SAVINGS' | 'CHECKING' | (string & Record<never, never>);
@@ -304,6 +306,25 @@ export interface CreateBankTestRequest {
   bankProvider: 'BANK_TEST';
 }
 
+export type BinanceValidationType =
+  | 'GLOBAL'   // any reference (default)
+  | 'BY_USER'  // payer's first name
+  | 'BY_DATE'  // UTC time flat (HHMMSS)
+  | 'BY_NOTE'  // payer's note
+  | (string & Record<never, never>);
+
+export interface CreateBinanceAppRequest extends BaseCreateUserBankRequest {
+  bankProvider: 'BINANCE_APP';
+  apiKey: string;    // Clave API    → API: username
+  secretKey: string; // Clave Secreta → API: password
+  /** Validation strategy. Defaults to 'GLOBAL'. */
+  validationType?: BinanceValidationType;
+}
+
+export interface CreateNotificationAccountRequest extends BaseCreateUserBankRequest {
+  bankProvider: 'NOTIFICATION_ACCOUNT';
+}
+
 interface BaseBankPlazaRequest extends BaseCreateUserBankRequest {
   clientId: string;      // Client ID     → API: username
   clientSecret: string;  // Client Secret → API: password
@@ -324,4 +345,6 @@ export type CreateUserBankRequest =
   | CreateVeBanEmpV2Request
   | CreateBankTestRequest
   | CreateBankPlazaV1Request
-  | CreateBankPlazaQaV1Request;
+  | CreateBankPlazaQaV1Request
+  | CreateBinanceAppRequest
+  | CreateNotificationAccountRequest;

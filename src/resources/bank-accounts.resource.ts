@@ -72,6 +72,17 @@ function buildCreateBody(req: CreateUserBankRequest, userId: string): Record<str
     return { bank_provider: req.bankProvider, user_id: userId };
   }
 
+  if (req.bankProvider === 'NOTIFICATION_ACCOUNT') {
+    return {
+      bank_provider: req.bankProvider,
+      description: req.description,
+      user_bank_phone: req.userBankPhone,
+      user_bank_dni: req.userBankDni,
+      user_id: userId,
+      metadata: req.metadata ?? [],
+    };
+  }
+
   const body: Record<string, unknown> = {
     bank_provider: req.bankProvider,
     description: req.description,
@@ -89,6 +100,14 @@ function buildCreateBody(req: CreateUserBankRequest, userId: string): Record<str
     case 'VE_BAN_EMP_V2':
       body['username'] = req.accountNumber;
       body['password'] = req.apiKey;
+      break;
+    case 'BINANCE_APP':
+      body['username'] = req.apiKey;
+      body['password'] = req.secretKey;
+      body['metadata'] = [
+        ...(req.metadata ?? []),
+        { key_name: 'BINANCE_VALIDATION_TYPE', key_value: req.validationType ?? 'GLOBAL' },
+      ];
       break;
     case 'VE_BANK_PLAZA_V1':
     case 'VE_BANK_PLAZA_QA_V1':

@@ -163,6 +163,8 @@ type BankProvider =
   | 'MERCANTIL_EMP_TEST_V1' // Mercantil test
   | 'VE_BANK_PLAZA_V1'      // Banco Plaza producción
   | 'VE_BANK_PLAZA_QA_V1'   // Banco Plaza QA
+  | 'BINANCE_APP'           // Binance Pay
+  | 'NOTIFICATION_ACCOUNT'  // Cuenta de notificación (sin verificación bancaria)
   | 'BANK_TEST'             // Sandbox
   | string;
 ```
@@ -229,6 +231,44 @@ const bank = await pabilo.bankAccounts.create({
   clientId: 'qa-client-id',
   clientSecret: 'qa-client-secret',
   accountNumber: '01380000000000000000',
+});
+```
+
+**Binance Pay — `BINANCE_APP`**
+
+```typescript
+const bank = await pabilo.bankAccounts.create({
+  bankProvider: 'BINANCE_APP',
+  description: 'Binance Pay',
+  userBankPhone: '04241234567',
+  userBankDni: '12345678',
+  apiKey: 'tu-clave-api',
+  secretKey: 'tu-clave-secreta',
+  // validationType: 'GLOBAL', // opcional — ver tabla abajo
+});
+```
+
+El campo `validationType` controla cómo se valida `bankReference` en cada verificación de pago:
+
+| Valor | Descripción | Default |
+|---|---|---|
+| `'GLOBAL'` | Acepta cualquiera de los tres tipos de referencia | ✓ |
+| `'BY_USER'` | Solo el primer nombre del pagador en Binance | |
+| `'BY_DATE'` | Solo la hora UTC plana de la transacción (`HHMMSS`) | |
+| `'BY_NOTE'` | Solo la nota que el pagador incluyó en el pago | |
+
+> Para verificar pagos en Binance usa `movementType: 'GENERIC'`. Ver [verificación Binance](#verificación-binance).
+
+**Cuenta de notificación — `NOTIFICATION_ACCOUNT`**
+
+Cuenta sin verificación bancaria, usada solo para recibir notificaciones. Solo requiere teléfono y cédula.
+
+```typescript
+const bank = await pabilo.bankAccounts.create({
+  bankProvider: 'NOTIFICATION_ACCOUNT',
+  description: 'Notificaciones',
+  userBankPhone: '04241234567',
+  userBankDni: '12345678',
 });
 ```
 
@@ -466,6 +506,42 @@ type VerifyPaymentResult =
 
 ---
 
+## Verificación Binance
+
+Para cuentas `BINANCE_APP` la verificación usa `movementType: 'GENERIC'`. El valor de `bankReference` depende del `validationType` configurado en la cuenta:
+
+| `validationType` | `bankReference` esperado | Ejemplo |
+|---|---|---|
+| `'GLOBAL'` (default) | Cualquiera de los tres tipos | primer nombre, hora UTC o nota |
+| `'BY_USER'` | Primer nombre del pagador en Binance | `"Juan"` |
+| `'BY_DATE'` | Hora UTC de la transacción sin separadores (`HHMMSS`) | `"012044"` para 01:20:44 UTC |
+| `'BY_NOTE'` | Nota que el pagador incluyó en el pago | `"pago factura 123"` |
+
+```typescript
+// Con GLOBAL (default) — usa cualquier referencia disponible
+const result = await pabilo.payments.verify(binanceBank.id, {
+  amount: 4000,
+  bankReference: 'Juan',         // primer nombre, o '012044', o la nota
+  movementType: 'GENERIC',
+});
+
+// Con BY_DATE — solo hora UTC plana
+const result = await pabilo.payments.verify(binanceBank.id, {
+  amount: 4000,
+  bankReference: '012044',       // 01:20:44 UTC sin separadores
+  movementType: 'GENERIC',
+});
+
+// Con BY_NOTE — solo nota del pago
+const result = await pabilo.payments.verify(binanceBank.id, {
+  amount: 4000,
+  bankReference: 'pago factura', // nota que el pagador incluyó
+  movementType: 'GENERIC',
+});
+```
+
+---
+
 ## Webhooks
 
 When a payment link is paid, the API sends a `POST` to the `webhookUrl` with the following payload. Import `PaymentLinkWebhookPayload` to type your webhook handler:
@@ -694,6 +770,8 @@ import type {
   CreateBankTestRequest,
   CreateBankPlazaV1Request,
   CreateBankPlazaQaV1Request,
+  CreateBinanceAppRequest,
+  CreateNotificationAccountRequest,
   UserBankMetadataEntry,
   CreatePaymentLinkRequest,
   UpdatePaymentLinkRequest,
@@ -710,6 +788,7 @@ import type {
   PaymentLinkOrigin,    // 'pabilo' | 'api'
   BankProvider,         // 'VE_BAN' | 'VE_BAN_EMP_V2' | ...
   MovementType,         // 'GENERIC' | 'MOVIL_PAY' | 'TRANSFER' | 'C2P'
+  BinanceValidationType,// 'GLOBAL' | 'BY_USER' | 'BY_DATE' | 'BY_NOTE'
   UserBankPaymentStatus,// 'pending' | 'paid' | 'failed'
   UserType,             // 'user' | 'admin' | 'commerce' | ...
   PlanType,             // 'credit' | 'unlimited' | 'counter'
