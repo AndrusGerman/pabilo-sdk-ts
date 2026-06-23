@@ -307,10 +307,11 @@ export interface CreateBankTestRequest {
 }
 
 export type BinanceValidationType =
-  | 'GLOBAL'   // any reference (default)
-  | 'BY_USER'  // payer's first name
-  | 'BY_DATE'  // UTC time flat (HHMMSS)
-  | 'BY_NOTE'  // payer's note
+  | 'GLOBAL'    // any reference (default)
+  | 'BY_USER'   // payer's first name
+  | 'BY_DATE'   // UTC time flat (HHMMSS)
+  | 'BY_NOTE'   // payer's note
+  | 'BY_ORDER'  // order ID
   | (string & Record<never, never>);
 
 export interface CreateBinanceAppRequest extends BaseCreateUserBankRequest {

@@ -252,10 +252,11 @@ El campo `validationType` controla cómo se valida `bankReference` en cada verif
 
 | Valor | Descripción | Default |
 |---|---|---|
-| `'GLOBAL'` | Acepta cualquiera de los tres tipos de referencia | ✓ |
+| `'GLOBAL'` | Acepta cualquiera de los cuatro tipos de referencia | ✓ |
 | `'BY_USER'` | Solo el primer nombre del pagador en Binance | |
 | `'BY_DATE'` | Solo la hora UTC plana de la transacción (`HHMMSS`) | |
 | `'BY_NOTE'` | Solo la nota que el pagador incluyó en el pago | |
+| `'BY_ORDER'` | Solo el order ID de la transacción | |
 
 > Para verificar pagos en Binance usa `movementType: 'GENERIC'`. Ver [verificación Binance](#verificación-binance).
 
@@ -512,10 +513,11 @@ Para cuentas `BINANCE_APP` la verificación usa `movementType: 'GENERIC'`. El va
 
 | `validationType` | `bankReference` esperado | Ejemplo |
 |---|---|---|
-| `'GLOBAL'` (default) | Cualquiera de los tres tipos | primer nombre, hora UTC o nota |
+| `'GLOBAL'` (default) | Cualquiera de los cuatro tipos | primer nombre, hora UTC, nota u order ID |
 | `'BY_USER'` | Primer nombre del pagador en Binance | `"Juan"` |
 | `'BY_DATE'` | Hora UTC de la transacción sin separadores (`HHMMSS`) | `"012044"` para 01:20:44 UTC |
 | `'BY_NOTE'` | Nota que el pagador incluyó en el pago | `"pago factura 123"` |
+| `'BY_ORDER'` | Order ID de la transacción Binance | `"123456789"` |
 
 ```typescript
 // Con GLOBAL (default) — usa cualquier referencia disponible
