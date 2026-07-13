@@ -5,3 +5,5 @@ dist/
 .env.local
 sandbox.mjs
 .claude
+# npm auth (token injected via NPM_TOKEN env at publish time)
+.npmrc
