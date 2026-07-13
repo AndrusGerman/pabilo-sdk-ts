@@ -34,6 +34,23 @@ export type PaymentLinkType =
 
 export type PaymentLinkOrigin = 'pabilo' | 'api' | (string & Record<never, never>);
 
+export type Currency =
+  | 'VEF'
+  | 'USD'
+  | 'EUR'
+  | 'USDT'
+  | (string & Record<never, never>);
+
+export type SubscriptionStatus =
+  | 'pending'
+  | 'active'
+  | 'inactive'
+  | 'completed'
+  | 'cancelled'
+  | (string & Record<never, never>);
+
+export type SubscriptionPeriodType = 'month' | 'year' | (string & Record<never, never>);
+
 export type MovementType =
   | 'GENERIC'
   | 'MOVIL_PAY'
