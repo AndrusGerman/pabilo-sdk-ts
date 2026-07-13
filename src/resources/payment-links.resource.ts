@@ -49,6 +49,7 @@ export class PaymentLinksResource implements IPaymentLinksPort {
     if (req.notificationByWhatsapp !== undefined) body['notification_by_whastapp'] = req.notificationByWhatsapp;
     if (req.name !== undefined) body['name'] = req.name;
     if (req.expirationTime !== undefined) body['expiration_time'] = req.expirationTime;
+    if (req.rateExpirationTime !== undefined) body['rate_expiration_time'] = req.rateExpirationTime;
     if (req.metadata !== undefined) body['metadata'] = req.metadata;
 
     const res = await this.http.request<Record<string, unknown>>({
@@ -120,6 +121,9 @@ function normalizePaymentLink(raw: Record<string, unknown>): PaymentLink {
     ...(typeof src['webhook_method'] === 'string'            ? { webhookMethod: src['webhook_method'] }                   : {}),
     ...(typeof src['notification_by_whastapp'] === 'boolean' ? { notificationByWhatsapp: src['notification_by_whastapp'] } : {}),
     ...(typeof src['expiration_time'] === 'number'           ? { expirationTime: src['expiration_time'] }                 : {}),
+    ...(typeof src['rate_exchange'] === 'number'             ? { rateExchange: src['rate_exchange'] }                     : {}),
+    ...(typeof src['rate_expiration_time'] === 'number'      ? { rateExpirationTime: src['rate_expiration_time'] }        : {}),
+    ...(typeof src['rate_updated_at'] === 'string'           ? { rateUpdatedAt: src['rate_updated_at'] }                  : {}),
     ...(typeof src['payment_link_origin'] === 'string'       ? { paymentLinkOrigin: src['payment_link_origin'] }         : {}),
     ...(typeof src['created_at'] === 'string'                ? { createdAt: src['created_at'] }                           : {}),
     ...(typeof src['updated_at'] === 'string'                ? { updatedAt: src['updated_at'] }                           : {}),

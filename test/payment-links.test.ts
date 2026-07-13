@@ -62,6 +62,28 @@ describe('PaymentLinksResource', () => {
       const result = await resource.create({ amount: 1, description: 'Test', userBankId: 'b1' });
       expect(result.currency).toBe('EUR');
     });
+
+    it('sends rateExpirationTime and normalizes locked rate fields', async () => {
+      let captured: RequestOptions | null = null;
+      const http: IHttpClient = {
+        async request(opts) {
+          captured = opts;
+          return {
+            paymentlink: {
+              id: 'pl1', url: 'u', currency: 'USD',
+              rate_exchange: 721.34, rate_expiration_time: 120, rate_updated_at: '2026-07-13T00:00:00Z',
+            },
+          } as never;
+        },
+      };
+      const resource = new PaymentLinksResource(http);
+      const result = await resource.create({ amount: 10, description: 'Test', userBankId: 'b1', currency: 'USD', rateExpirationTime: 120 });
+      const body = (captured as unknown as RequestOptions).body as Record<string, unknown>;
+      expect(body['rate_expiration_time']).toBe(120);
+      expect(result.rateExchange).toBe(721.34);
+      expect(result.rateExpirationTime).toBe(120);
+      expect(result.rateUpdatedAt).toBe('2026-07-13T00:00:00Z');
+    });
   });
 
   describe('getInfo', () => {

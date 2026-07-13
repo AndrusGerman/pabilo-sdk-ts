@@ -352,6 +352,7 @@ const link = await pabilo.paymentLinks.create({
   webhookUrl: 'https://myapp.com/webhook/pabilo',
   notificationByWhatsapp: true,
   currency: 'USD', // 'VEF' (default) | 'USD' | 'EUR' | 'USDT'
+  rateExpirationTime: 120, // lock the USD rate for 2 h (default 60)
 });
 
 console.log(link.url);    // https://pabilo.app/pay/...
@@ -372,6 +373,7 @@ console.log(link.status); // 'pending' | 'active' | 'paid' | 'failed' | 'cancele
 | `webhookUrl` | `string` | no | URL to receive payment event webhooks |
 | `notificationByWhatsapp` | `boolean` | no | Send WhatsApp notification on payment |
 | `expirationTime` | `number` | no | Expiration in minutes. Default: `1440` (24 h). `-1` = never expires |
+| `rateExpirationTime` | `number` | no | Minutes the locked exchange rate stays valid (non-`VEF`). Default: `60`. Within the window every payment uses the same rate; it refreshes on expiry |
 | `metadata` | `Record<string, unknown>` | no | Arbitrary key/value data |
 
 **Returns:** `PaymentLink`
@@ -396,6 +398,9 @@ interface PaymentLink {
   notificationByWhatsapp?: boolean;
   expirationTime?: number;
   paymentLinkOrigin?: PaymentLinkOrigin;
+  rateExchange?: number;        // locked Bs-per-unit rate (1 for VEF)
+  rateExpirationTime?: number;  // minutes the rate stays valid (default 60)
+  rateUpdatedAt?: string;       // when the rate was last locked (validity = rateUpdatedAt + rateExpirationTime)
   createdAt?: string;
   updatedAt?: string;
 }

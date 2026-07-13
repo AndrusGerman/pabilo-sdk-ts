@@ -195,6 +195,12 @@ export interface PaymentLink {
   notificationByWhatsapp?: boolean;
   expirationTime?: number;
   paymentLinkOrigin?: PaymentLinkOrigin;
+  /** Locked Bs-per-unit exchange rate for the link's currency (1 for VEF). */
+  rateExchange?: number;
+  /** Minutes the locked rate stays valid (default 60). Validity = rateUpdatedAt + rateExpirationTime. */
+  rateExpirationTime?: number;
+  /** ISO timestamp when the rate was last locked/refreshed (defaults to createdAt). */
+  rateUpdatedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -273,6 +279,8 @@ export interface CreatePaymentLinkRequest {
   name?: string;
   /** Expiration time in minutes. Defaults to 1440 (24 h). Pass -1 for no expiration. */
   expirationTime?: number;
+  /** Minutes the locked exchange rate stays valid (non-VEF). Defaults to 60. */
+  rateExpirationTime?: number;
   metadata?: Record<string, unknown>;
 }
 
