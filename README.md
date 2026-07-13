@@ -351,8 +351,7 @@ const link = await pabilo.paymentLinks.create({
   redirectUrl: 'https://myapp.com/gracias',
   webhookUrl: 'https://myapp.com/webhook/pabilo',
   notificationByWhatsapp: true,
-  isUsd: false,
-  currency: 'VES',
+  currency: 'USD', // 'VEF' (default) | 'USD' | 'EUR' | 'USDT'
 });
 
 console.log(link.url);    // https://pabilo.app/pay/...
@@ -368,8 +367,7 @@ console.log(link.status); // 'pending' | 'active' | 'paid' | 'failed' | 'cancele
 | `description` | `string` | yes | Internal description |
 | `userBankId` | `string` | yes | ID of the bank account to receive payment |
 | `name` | `string` | no | Customer-facing name shown on the payment page |
-| `currency` | `string` | no | Defaults to `'VES'` |
-| `isUsd` | `boolean` | no | Whether the amount is in USD |
+| `currency` | `Currency` | no | `'VEF'` (default), `'USD'`, `'EUR'` or `'USDT'`. Non-`VEF` amounts are converted to Bs with the current rate at payment time |
 | `redirectUrl` | `string` | no | URL to redirect after payment |
 | `webhookUrl` | `string` | no | URL to receive payment event webhooks |
 | `notificationByWhatsapp` | `boolean` | no | Send WhatsApp notification on payment |
@@ -391,7 +389,7 @@ interface PaymentLink {
   withSubscriptionId?: string;
   name?: string;
   description?: string;
-  isUsd?: boolean;
+  currency?: Currency;
   redirectUrl?: string;
   webhookUrl?: string;
   webhookMethod?: string;
@@ -402,6 +400,7 @@ interface PaymentLink {
   updatedAt?: string;
 }
 
+type Currency          = 'VEF' | 'USD' | 'EUR' | 'USDT' | string;
 type PaymentLinkStatus = 'pending' | 'active' | 'paid' | 'failed' | 'canceled' | 'expired' | 'stopped' | string;
 type PaymentLinkType   = 'default' | 'fixed' | 'subscription' | 'donation' | string;
 type PaymentLinkOrigin = 'pabilo' | 'api' | string;
@@ -447,6 +446,117 @@ const updated = await pabilo.paymentLinks.update(link.id, {
   amount: 5000,
   description: 'Orden actualizada',
 });
+```
+
+---
+
+## `pabilo.subscriptions`
+
+Recurring subscriptions. Each billing cycle generates a payment link; the
+`webhookUrl` you set here is propagated to every one of those links, so your
+webhook fires on the first charge and on every renovation (payload arrives with
+`type: 'subscription'` and `withSubscriptionId` set).
+
+### `subscriptions.create(req): Promise<Subscription>`
+
+```typescript
+const subscription = await pabilo.subscriptions.create({
+  userBankId: bank.id,
+  payFirst: true,
+  name: 'Mensualidad Gimnasio',
+  description: 'Plan mensual',
+  webhookUrl: 'https://myapp.com/webhook/pabilo',
+  currency: 'USD', // 'VEF' (default) | 'USD' | 'EUR' | 'USDT'
+  // Option A — inline product + client:
+  uniqueProduct: { productName: 'Plan Oro', productPrice: 20 },
+  uniqueClient: { clientName: 'Ana Pérez', clientPhone: '+584121234567' },
+  // Option B — existing branch entities (mutually exclusive with the inline ones):
+  // branchProductId: 'prod_id',
+  // branchClientId: 'client_id',
+});
+
+console.log(subscription.id);
+console.log(subscription.status); // 'pending' | 'active' | ...
+```
+
+**Request fields:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userBankId` | `string` | yes | Bank account to receive the payments |
+| `payFirst` | `boolean` | yes | If `true`, the first charge must be paid to activate the subscription |
+| `name` | `string` | no | Subscription name |
+| `description` | `string` | no | Description |
+| `webhookUrl` | `string` | no | Webhook for every generated payment link |
+| `currency` | `Currency` | no | `'VEF'` (default), `'USD'`, `'EUR'` or `'USDT'` |
+| `uniqueProduct` | `SubscriptionUniqueProduct` | no* | Inline product `{ productName, productPrice }` |
+| `branchProductId` | `string` | no* | Existing branch product id (instead of `uniqueProduct`) |
+| `uniqueClient` | `SubscriptionUniqueClient` | no* | Inline client `{ clientName, clientPhone }` |
+| `branchClientId` | `string` | no* | Existing branch client id (instead of `uniqueClient`) |
+
+\* Provide exactly one product option and one client option.
+
+### `subscriptions.list(req?): Promise<SubscriptionsPage>`
+
+```typescript
+const page = await pabilo.subscriptions.list({
+  limit: 10,
+  page: 1,
+  status: 'active', // filter by status
+  search: 'gimnasio',
+});
+
+console.log(page.total);
+console.log(page.items); // Subscription[]
+```
+
+### `subscriptions.getInfo(id): Promise<Subscription>`
+
+```typescript
+const subscription = await pabilo.subscriptions.getInfo('69d0083b691af50b78e07921');
+console.log(subscription.status);
+console.log(subscription.renovationDate);
+```
+
+### `subscriptions.cancel(id): Promise<Subscription>`
+
+Cancels the subscription and its pending renovation links.
+
+```typescript
+const cancelled = await pabilo.subscriptions.cancel(subscription.id);
+console.log(cancelled.status); // 'cancelled'
+```
+
+**Returns:** `Subscription`
+
+```typescript
+interface Subscription {
+  id: string;
+  name?: string;
+  description?: string;
+  status?: SubscriptionStatus;
+  subscriptionPeriodType?: SubscriptionPeriodType;
+  currency?: Currency;
+  renovationDate?: string | null;
+  renovationIsPaid?: boolean;
+  renovationCount?: number;
+  renovationLimitType?: string;
+  clientType?: string;
+  uniqueClient?: SubscriptionUniqueClient;
+  productType?: string;
+  uniqueProduct?: SubscriptionUniqueProduct;
+  branchClientId?: string;
+  branchProductId?: string;
+  payFirst?: boolean;
+  userBankId?: string;
+  userId?: string;
+  webhookUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+type SubscriptionStatus     = 'pending' | 'active' | 'inactive' | 'completed' | 'cancelled' | string;
+type SubscriptionPeriodType = 'month' | 'year' | string;
 ```
 
 ---

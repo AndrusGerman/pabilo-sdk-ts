@@ -42,13 +42,12 @@ export class PaymentLinksResource implements IPaymentLinksPort {
       amount: req.amount,
       description: req.description,
       user_bank_id: req.userBankId,
-      currency: req.currency ?? 'VES',
+      currency: req.currency ?? 'VEF',
     };
     if (req.redirectUrl !== undefined) body['redirect_url'] = req.redirectUrl;
     if (req.webhookUrl !== undefined) body['webhook_url'] = req.webhookUrl;
     if (req.notificationByWhatsapp !== undefined) body['notification_by_whastapp'] = req.notificationByWhatsapp;
     if (req.name !== undefined) body['name'] = req.name;
-    if (req.isUsd !== undefined) body['is_usd'] = req.isUsd;
     if (req.expirationTime !== undefined) body['expiration_time'] = req.expirationTime;
     if (req.metadata !== undefined) body['metadata'] = req.metadata;
 
@@ -115,7 +114,7 @@ function normalizePaymentLink(raw: Record<string, unknown>): PaymentLink {
     ...(typeof src['with_subscription_id'] === 'string'      ? { withSubscriptionId: src['with_subscription_id'] }        : {}),
     ...(typeof src['name'] === 'string'                      ? { name: src['name'] }                                       : {}),
     ...(typeof src['description'] === 'string'               ? { description: src['description'] }                        : {}),
-    ...(typeof src['is_usd'] === 'boolean'                   ? { isUsd: src['is_usd'] }                                   : {}),
+    ...(typeof src['currency'] === 'string'                  ? { currency: src['currency'] }                              : {}),
     ...(typeof src['redirect_url'] === 'string'              ? { redirectUrl: src['redirect_url'] }                       : {}),
     ...(typeof src['webhook_url'] === 'string'               ? { webhookUrl: src['webhook_url'] }                         : {}),
     ...(typeof src['webhook_method'] === 'string'            ? { webhookMethod: src['webhook_method'] }                   : {}),

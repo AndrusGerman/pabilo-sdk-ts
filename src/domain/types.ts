@@ -188,7 +188,7 @@ export interface PaymentLink {
   withSubscriptionId?: string;
   name?: string;
   description?: string;
-  isUsd?: boolean;
+  currency?: Currency;
   redirectUrl?: string;
   webhookUrl?: string;
   webhookMethod?: string;
@@ -265,12 +265,12 @@ export interface CreatePaymentLinkRequest {
   amount: number;
   description: string;
   userBankId: string;
-  currency?: string;
+  /** Currency of the amount. Defaults to 'VEF' (Bolívares). Non-VEF amounts are converted to Bs using the current rate at payment time. */
+  currency?: Currency;
   redirectUrl?: string;
   webhookUrl?: string;
   notificationByWhatsapp?: boolean;
   name?: string;
-  isUsd?: boolean;
   /** Expiration time in minutes. Defaults to 1440 (24 h). Pass -1 for no expiration. */
   expirationTime?: number;
   metadata?: Record<string, unknown>;
@@ -280,7 +280,7 @@ export interface UpdatePaymentLinkRequest {
   amount?: number;
   description?: string;
   redirectUrl?: string;
-  currency?: string;
+  currency?: Currency;
 }
 
 export interface VerifyPaymentRequest {
@@ -366,3 +366,75 @@ export type CreateUserBankRequest =
   | CreateBankPlazaQaV1Request
   | CreateBinanceAppRequest
   | CreateNotificationAccountRequest;
+
+// ── Subscriptions ─────────────────────────────────────────────────────────────
+
+export interface SubscriptionUniqueProduct {
+  productName: string;
+  productPrice: number;
+  productCode?: string;
+}
+
+export interface SubscriptionUniqueClient {
+  clientName: string;
+  clientPhone: string;
+  clientCode?: string;
+}
+
+export interface Subscription {
+  id: string;
+  name?: string;
+  description?: string;
+  status?: SubscriptionStatus;
+  subscriptionPeriodType?: SubscriptionPeriodType;
+  currency?: Currency;
+  renovationDate?: string | null;
+  renovationIsPaid?: boolean;
+  renovationCount?: number;
+  renovationLimitType?: string;
+  clientType?: string;
+  uniqueClient?: SubscriptionUniqueClient;
+  productType?: string;
+  uniqueProduct?: SubscriptionUniqueProduct;
+  branchClientId?: string;
+  branchProductId?: string;
+  payFirst?: boolean;
+  userBankId?: string;
+  userId?: string;
+  webhookUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateSubscriptionRequest {
+  userBankId: string;
+  /** Whether the first payment is required to activate the subscription. */
+  payFirst: boolean;
+  name?: string;
+  description?: string;
+  webhookUrl?: string;
+  /** Currency of the product price. Defaults to 'VEF' (Bolívares). */
+  currency?: Currency;
+  /** Inline product. Mutually exclusive with branchProductId. */
+  uniqueProduct?: SubscriptionUniqueProduct;
+  /** Existing branch product id. Mutually exclusive with uniqueProduct. */
+  branchProductId?: string;
+  /** Inline client. Mutually exclusive with branchClientId. */
+  uniqueClient?: SubscriptionUniqueClient;
+  /** Existing branch client id. Mutually exclusive with uniqueClient. */
+  branchClientId?: string;
+}
+
+export interface ListSubscriptionsRequest {
+  page?: number;
+  limit?: number;
+  status?: SubscriptionStatus;
+  search?: string;
+}
+
+export interface SubscriptionsPage {
+  items: Subscription[];
+  total: number;
+  page: number;
+  limit: number;
+}

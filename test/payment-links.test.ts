@@ -38,7 +38,29 @@ describe('PaymentLinksResource', () => {
       const body = (captured as RequestOptions).body as Record<string, unknown>;
       expect(body['redirect_url']).toBe('https://ok');
       expect(body['webhook_url']).toBe('https://wh');
-      expect(body['currency']).toBe('VES');
+      expect(body['currency']).toBe('VEF');
+    });
+
+    it('sends the provided currency', async () => {
+      let captured: RequestOptions | null = null;
+      const http: IHttpClient = {
+        async request(opts) {
+          captured = opts;
+          return { id: 'x', url: 'u' } as never;
+        },
+      };
+      const resource = new PaymentLinksResource(http);
+      await resource.create({ amount: 100, description: 'Pay', userBankId: 'bank1', currency: 'USD' });
+      const body = (captured as unknown as RequestOptions).body as Record<string, unknown>;
+      expect(body['currency']).toBe('USD');
+      expect(body['is_usd']).toBeUndefined();
+    });
+
+    it('normalizes currency from the response', async () => {
+      const http = mockHttp({ paymentlink: { id: 'pl1', url: 'u', currency: 'EUR' } });
+      const resource = new PaymentLinksResource(http);
+      const result = await resource.create({ amount: 1, description: 'Test', userBankId: 'b1' });
+      expect(result.currency).toBe('EUR');
     });
   });
 
